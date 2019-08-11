@@ -24,14 +24,14 @@ class PriceVolumePlotter():
 		maxprice = max(prices)
 		minprice = min(prices)
 		size = 300
-		xnew = np.linspace(minprice,maxprice,size) #300 represents number of points to make between T.min and T.max
-		 
-		f = ip.interp1d(prices,volumes,kind='nearest')
+#		xnew = np.linspace(minprice,maxprice,size) #300 represents number of points to make between T.min and T.max
+#		 
+#		f = ip.interp1d(prices,volumes,kind='nearest')
 		# print (xnew)
 		# print (f(xnew))
-		width = (maxprice - minprice)/size
-		self.ax.bar(xnew,f(xnew), align='center', width=width)
-		# self.ax.hist(prices, bins=xnew, width=width)
+#		width = (maxprice - minprice)/size
+#		self.ax.bar(xnew,f(xnew), align='center', width=width)
+		self.ax.hist(prices, bins=100, weights=volumes)
 		# self.ax.bar([114540., 117685. ,120830. ,123975. ,127120.], [ 3842.5, 15145.61170213 ,55955.84761905 ,14572.375, 15750])
 
 		# width = (maxprice - minprice)/len(prices)

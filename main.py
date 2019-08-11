@@ -55,7 +55,7 @@ if __name__=="__main__":
         trading_data = pd.read_json(url)
         trading_data.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
         trading_data = trading_data.set_index('time')
-        trading_data.to_hdf('data/'+symbol+ ".h5")
+#        trading_data.to_hdf('data/'+symbol+ ".h5")
         results = json.load(urllib.request.urlopen(url))
         c = conn.cursor()
         c.execute("SELECT TradingTime from %s DESC LIMIT 1" %(bar_table))
