@@ -8,8 +8,8 @@ import seaborn as sns
 class PriceVolumePlotter():
 	def __init__(self):
 		
-		plt.rcParams["figure.figsize"] = (20,3)
-        self.fig, self.ax = plt.subplots()
+		plt.rcParams["figure.figsize"] = 6,14
+		self.fig, self.ax = plt.subplots()
 
 
 	def plot(self, symbol, prices, volumes):

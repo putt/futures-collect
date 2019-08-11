@@ -68,21 +68,12 @@ if __name__=="__main__":
                 vol_data = []
                 pv_data = {}
                 for r in results:
-                    # r -- ["2016-09-05","2896.000","2916.000","2861.000","2870.000","1677366"]  open, high, low, close
-                    # print (r)
                     if not last or r[0] > last[0]:
                         bar_data.append((symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
-                        # conn.execute(
-                        #     "INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES ('%s', %f, %f, %f, %f, %d, '%s')"
-                        #     % (bar_table, symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
                         vol_data.append((float(r[1]), float(r[5])/4))
                         vol_data.append((float(r[2]), float(r[5])/4))
                         vol_data.append((float(r[3]), float(r[5])/4))
                         vol_data.append((float(r[4]), float(r[5])/4))
-                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[1]), float(r[5])/4))
-                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[2]), float(r[5])/4))
-                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[3]), float(r[5])/4))
-                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[4]), float(r[5])/4))
                 conn.executemany("INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES (?,?,?,?,?,?,?)"%bar_table ,bar_data)
                 conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , vol_data)
                 conn.commit()
@@ -94,12 +85,7 @@ if __name__=="__main__":
 
                 c.execute('SELECT price, sum(volume) from %s group by price order by price'%vol_table)
               
-                prices, volumes = zip(*c.fetchall())
-                # print( min(prices), max(prices))
-                # print (prices)
-                # print (volumes)
-                
-
+                prices, volumes = zip(*c.fetchall())              
                 pvplot.plot(symbol, prices, volumes)
             
         else:
