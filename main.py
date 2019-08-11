@@ -7,6 +7,8 @@ import sqlite3
 import pandas as pd
 from pvplot import PriceVolumePlotter
 import numpy as np
+from datetime import datetime
+import time
 
 conn = sqlite3.connect('futures.db3', check_same_thread = False)
 contracts =  []
@@ -45,57 +47,62 @@ if __name__=="__main__":
     base_url = 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService.getInnerFuturesMiniKLine5m?symbol='
     pvplot = PriceVolumePlotter()
     # for symbol in contracts:
-    for symbol in ['ni1910',]:
-        inst = dealZhengZhou(symbol)
-        # print (inst, symbol)
-        url = base_url + inst
-        bar_table = symbol + '_5MBar'
-        vol_table = symbol + '_VolDistribution'
-        print ('url = ' + url)
-        trading_data = pd.read_json(url)
-        trading_data.columns = ['time', 'open', 'high', 'low', 'close', 'volume']
-        trading_data = trading_data.set_index('time')
-#        trading_data.to_hdf('data/'+symbol+ ".h5")
-        results = json.load(urllib.request.urlopen(url))
-        c = conn.cursor()
-        c.execute("SELECT TradingTime from %s DESC LIMIT 1" %(bar_table))
-        last = c.fetchone()
+    while 1:
+        hour = datetime.now().hour
+#        if (hour>8 and hour < 15) or hour >20:
+        if 1:
+            for symbol in contracts:
+                inst = dealZhengZhou(symbol)
+                # print (inst, symbol)
+                url = base_url + inst
+                bar_table = symbol + '_5MBar'
+                vol_table = symbol + '_VolDistribution'
+                print ('url = ' + url)
 
-        bar_data = []
-        vol_data = []
-        pv_data = {}
-        for r in results:
-            # r -- ["2016-09-05","2896.000","2916.000","2861.000","2870.000","1677366"]  open, high, low, close
-            # print (r)
-            if not last or r[0] > last[0]:
-                bar_data.append((symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
-                # conn.execute(
-                #     "INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES ('%s', %f, %f, %f, %f, %d, '%s')"
-                #     % (bar_table, symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
-                vol_data.append((float(r[1]), float(r[5])/4))
-                vol_data.append((float(r[2]), float(r[5])/4))
-                vol_data.append((float(r[3]), float(r[5])/4))
-                vol_data.append((float(r[4]), float(r[5])/4))
-                # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[1]), float(r[5])/4))
-                # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[2]), float(r[5])/4))
-                # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[3]), float(r[5])/4))
-                # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[4]), float(r[5])/4))
-        conn.executemany("INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES (?,?,?,?,?,?,?)"%bar_table ,bar_data)
-        conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , vol_data)
-        conn.commit()
-        # a = np.array(vol_data)
-        # print (a)
-        # b= a[a[:,0].argsort()]
-        # print (b)
-        # prices, volumes = zip(*vol_data)
+                results = json.load(urllib.request.urlopen(url))
+                c = conn.cursor()
+                c.execute("SELECT TradingTime from %s DESC LIMIT 1" %(bar_table))
+                last = c.fetchone()
 
-        c.execute('SELECT price, sum(volume) from %s group by price order by price'%vol_table)
-      
-        prices, volumes = zip(*c.fetchall())
-        # print( min(prices), max(prices))
-        # print (prices)
-        # print (volumes)
-        
+                bar_data = []
+                vol_data = []
+                pv_data = {}
+                for r in results:
+                    # r -- ["2016-09-05","2896.000","2916.000","2861.000","2870.000","1677366"]  open, high, low, close
+                    # print (r)
+                    if not last or r[0] > last[0]:
+                        bar_data.append((symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
+                        # conn.execute(
+                        #     "INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES ('%s', %f, %f, %f, %f, %d, '%s')"
+                        #     % (bar_table, symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0]))
+                        vol_data.append((float(r[1]), float(r[5])/4))
+                        vol_data.append((float(r[2]), float(r[5])/4))
+                        vol_data.append((float(r[3]), float(r[5])/4))
+                        vol_data.append((float(r[4]), float(r[5])/4))
+                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[1]), float(r[5])/4))
+                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[2]), float(r[5])/4))
+                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[3]), float(r[5])/4))
+                        # conn.execute("INSERT INTO %s (price, volume) VALUES (%f, %f)" %(vol_table, float(r[4]), float(r[5])/4))
+                conn.executemany("INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES (?,?,?,?,?,?,?)"%bar_table ,bar_data)
+                conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , vol_data)
+                conn.commit()
+                # a = np.array(vol_data)
+                # print (a)
+                # b= a[a[:,0].argsort()]
+                # print (b)
+                # prices, volumes = zip(*vol_data)
 
-        pvplot.plot(symbol, prices, volumes)
+                c.execute('SELECT price, sum(volume) from %s group by price order by price'%vol_table)
+              
+                prices, volumes = zip(*c.fetchall())
+                # print( min(prices), max(prices))
+                # print (prices)
+                # print (volumes)
+                
+
+                pvplot.plot(symbol, prices, volumes)
+            
+        else:
+            time.sleep(300000)
+        time.sleep(60000)
         

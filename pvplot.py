@@ -7,8 +7,9 @@ import seaborn as sns
 
 class PriceVolumePlotter():
 	def __init__(self):
-		self.fig, self.ax = plt.subplots()
-
+		
+		plt.rcParams["figure.figsize"] = (20,3)
+        self.fig, self.ax = plt.subplots()
 
 
 	def plot(self, symbol, prices, volumes):
@@ -31,7 +32,7 @@ class PriceVolumePlotter():
 		# print (f(xnew))
 #		width = (maxprice - minprice)/size
 #		self.ax.bar(xnew,f(xnew), align='center', width=width)
-		self.ax.hist(prices, bins=100, weights=volumes)
+		self.ax.hist(prices, bins=100, weights=volumes, orientation='horizontal')
 		# self.ax.bar([114540., 117685. ,120830. ,123975. ,127120.], [ 3842.5, 15145.61170213 ,55955.84761905 ,14572.375, 15750])
 
 		# width = (maxprice - minprice)/len(prices)
