@@ -23,7 +23,7 @@ with open('contracts.txt') as f:
 f.closed
 
 for i in contracts :
-    cmd = "CREATE TABLE IF NOT EXISTS " + i + " 5MBar (id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
+    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
     # print(cmd)
     conn.execute(cmd)
     cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution(price DOUBLE NULL, volume DOUBLE NULL)"
