@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>量价分布图</title>
+	<style>
+		body {font-size: 150%;}
+		input  {background-color: #8899ff;
+			font-size: 120%;
+			width: 4ch;
+		}
+		p    {color: red;}
+	</style>
+	<script src="http://lib.sinaapp.com/js/jquery/3.1.0/jquery-3.1.0.min.js"></script>
+	<script>
+		var folder = "figures/";
+
+$.ajax({
+			    url : folder,
+			    success: function (data) {
+			        $(data).find("a").attr("href", function (i, val) {
+			            if( val.match(/\.(jpe?g|png|gif)$/) ) { 
+			                $("body").append( "<img src='"+ folder + val +"'>" );
+			            } 
+			        });
+			    }
+			});
+		$(function() {
+			
+			
+			// var base_url = 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService.getInnerFuturesMiniKLine5m?symbol='
+		})
+	</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+
+<div>
+	<h2 id='title'></h2>
+	<div id='container'></div>
+	
+<h5 style="color:blue"><span id='value_clear' >重置所有</span></h4>
+</div>
+</body>
+
+</html>
