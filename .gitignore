@@ -123,7 +123,5 @@ dmypy.json
 .pyre/
 *.h5
 *.png
-*.png
-*.png
 *.db3
-*.db3
+*.db3-journal

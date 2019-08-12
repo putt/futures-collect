@@ -10,8 +10,12 @@ import numpy as np
 from datetime import datetime
 import time
 
+# sqlite 无法直接处理int64的数据，导致pandas的int64输入sqlite以后变成blob字段
+# via: https://stackoverflow.com/questions/49456158/integer-in-python-pandas-becomes-blob-binary-in-sqlite
 sqlite3.register_adapter(np.int64, lambda val: int(val))
 sqlite3.register_adapter(np.int32, lambda val: int(val))
+
+
 conn = sqlite3.connect('futures.db3', check_same_thread = False)
 contracts =  []
 with open('contracts.txt') as f:
@@ -19,15 +23,10 @@ with open('contracts.txt') as f:
 f.closed
 
 for i in contracts :
-    bar_table = i + '_5MBar'
-    # cmd = "DROP TABLE IF EXISTS " + bar_table
-    # conn.execute(cmd)
-
-    cmd = "CREATE TABLE IF NOT EXISTS " + bar_table \
-          + " (id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
+    cmd = "CREATE TABLE IF NOT EXISTS " + i + " 5MBar (id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
     # print(cmd)
     conn.execute(cmd)
-    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution" + " (price DOUBLE NULL, volume DOUBLE NULL)"
+    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution(price DOUBLE NULL, volume DOUBLE NULL)"
     conn.execute(cmd)
 
 def dealZhengZhou(symbol):
@@ -45,8 +44,6 @@ def volumeIncrease(pv_data, price, volume):
         pv_data[price] = volume
 
 if __name__=="__main__":
-    # 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService.getInnerFuturesDailyKLine?symbol=M1701'
-#    base_url = 'http://stock2.finance.sina.com.cn/futures/api/json.php/IndexService.getInnerFuturesMiniKLine5m?symbol='
     base_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
     pvplot = PriceVolumePlotter()
     # for symbol in contracts:
@@ -63,6 +60,7 @@ if __name__=="__main__":
                 vol_table = symbol + '_VolDistribution'
                 print (inst)
                 
+                # 更新数据
                 results = urllib.request.urlopen(url).read().decode('utf8')
                 remote_data = pd.read_json(results[results.find('(')+1: results.find(')')])
                 c = conn.cursor()
