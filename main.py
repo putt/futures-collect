@@ -10,6 +10,8 @@ import numpy as np
 from datetime import datetime
 import time
 
+sqlite3.register_adapter(np.int64, lambda val: int(val))
+sqlite3.register_adapter(np.int32, lambda val: int(val))
 conn = sqlite3.connect('futures.db3', check_same_thread = False)
 contracts =  []
 with open('contracts.txt') as f:
@@ -22,10 +24,10 @@ for i in contracts :
     # conn.execute(cmd)
 
     cmd = "CREATE TABLE IF NOT EXISTS " + bar_table \
-          + " (id INTEGER PRIMARY KEY NULL, inst TEXT NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, TradingTime TEXT NULL)"
+          + " (id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
     # print(cmd)
     conn.execute(cmd)
-    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution" + " (price DOUBLE DOUBLE, volume DOUBLE NULL)"
+    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution" + " (price DOUBLE NULL, volume DOUBLE NULL)"
     conn.execute(cmd)
 
 def dealZhengZhou(symbol):
@@ -61,41 +63,35 @@ if __name__=="__main__":
                 vol_table = symbol + '_VolDistribution'
                 print (inst)
                 
-                results = urllib.request.urlopen(url).read()
-                remote_data = pd.read_json(results[results.find(b'(')+1: results.find(b')')]).set_index('d')
+                results = urllib.request.urlopen(url).read().decode('utf8')
+                remote_data = pd.read_json(results[results.find('(')+1: results.find(')')])
                 c = conn.cursor()
-                c.execute("SELECT TradingTime from %s DESC LIMIT 1" %(bar_table))
+                c.execute("SELECT TradingTime from %s ORDER by TradingTime DESC LIMIT 1" %(bar_table))
                 last = c.fetchone()
                 
                 if not last:
-                    new_data = remote_data
+                    new_data = remote_data.iloc[:-1]
                 else:
-                    new_data = remote_data.loc[]
-
-                bar_data = []
-                vol_data = []
-                pv_data = {}
-                for r in results:
-                    # r = ["2019-02-28 23:00:00","2631.000","2631.000","2630.000","2631.000","74"]
-                    # datetime, open, high, low, close, volume
-                    if not last or r[0] > last[0]:
-                        bar_data.append((symbol, float(r[1]), float(r[2]), float(r[3]), float(r[4]), int(r[5]), r[0])) # symbol, o, h, l, c, v, datetime
-                        vol_data.append((float(r[1]), float(r[5])/4))
-                        vol_data.append((float(r[2]), float(r[5])/4))
-                        vol_data.append((float(r[3]), float(r[5])/4))
-                        vol_data.append((float(r[4]), float(r[5])/4))
-                conn.executemany("INSERT INTO %s (inst, open, high, low, close, volume, TradingTime) VALUES (?,?,?,?,?,?,?)"%bar_table ,bar_data)
-                conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , vol_data)
-                conn.commit()
-
+                    new_data = remote_data.loc[remote_data['d']>last[-1]+'1'].iloc[:-1]
+                if not new_data.empty:
+                    conn.executemany("INSERT INTO %s (close, TradingTime, high, low, open, position, volume ) VALUES (?,?,?,?,?,?,?)"%bar_table , new_data.values[:-1])
+                    
+                    pv1 = new_data.loc[:,['o','v']].rename(columns={'o':'price'})
+                    pv2 = new_data.loc[:,['h','v']].rename(columns={'h':'price'})  
+                    pv3 = new_data.loc[:,['l','v']].rename(columns={'l':'price'})
+                    pv4 = new_data.loc[:,['c','v']].rename(columns={'c':'price'})
+                    
+                    pv_data = pd.concat([pv1, pv2, pv3, pv4])
+                    print(new_data)
+                    print(pv_data)
+                    conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , pv_data.values)
+                    conn.commit()
+                
+                
+                # 做图
                 c.execute('SELECT price, sum(volume) from %s group by price order by price'%vol_table)
-              
                 prices, volumes = zip(*c.fetchall())   
-                if bar_data:
-                    current =  (bar_data[0][6], bar_data[0][4])
-                else:
-                    current = (results[0][0], results[0][4])
-                pvplot.plot(symbol,current , prices, volumes)
+                pvplot.plot(symbol, (remote_data.iloc[-1].d,remote_data.iloc[-1].c) , prices, volumes)
         else:
             print("Waiting for trading time.")
             time.sleep(300)

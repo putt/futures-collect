@@ -14,16 +14,13 @@ class PriceVolumePlotter():
     def plot(self, symbol, current, prices, volumes):
         # the histogram of the data
         # print (volumes)
-        # points = np.mgrid[min(prices):max(prices):100j]
-
-        # grid_z0 = griddata(prices, volumes, points, method='nearest')
-        # grid_z1 = griddata(prices, volumes, points, method='linear')
-        # grid_z2 = griddata(prices, volumes, points, method='cubic')
         self.ax.clear()
-       
+#        print(current)
+#        print(prices)
+#        print(volumes)
 
-        maxprice = max(prices)
-        minprice = min(prices)
+#        maxprice = max(prices)
+#        minprice = min(prices)
         size =80
 #        xnew = np.linspace(minprice,maxprice,size) #300 represents number of points to make between T.min and T.max
 #         
