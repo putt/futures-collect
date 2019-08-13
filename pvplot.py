@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from common import traceZig, volumeDistribution
+import numpy as np
 
 class PriceVolumePlotter():
     def __init__(self):
@@ -23,15 +24,17 @@ class PriceVolumePlotter():
         minp = min(prices)
         size = int(maxp/(maxp - minp))*2
 
-        self.ax.hist(prices, bins=size, weights=volumes, orientation='horizontal', histtype='step')
-        self.ax.hist(ceilings.h, weights=ceilings.v*2, orientation='horizontal', histtype='stepfilled', color='g')
-        self.ax.hist(floors.l, weights=floors.v*2, orientation='horizontal', histtype='stepfilled', color='r')
+        bins = np.linspace(minp, maxp, size)
+
+        self.ax.hist(prices, bins=bins, weights=volumes, orientation='horizontal', histtype='step')
+        self.ax.hist(ceilings.h, bins=bins, weights=ceilings.v*4, orientation='horizontal', histtype='stepfilled', color='g', edgecolor='w')
+        self.ax.hist(floors.l, bins=bins, weights=floors.v*4, orientation='horizontal', histtype='stepfilled', color='r', edgecolor='w')
         self.ax.set_title('{} {}'.format(symbol,bars.index[-1]))
         
         plt.axhline(y=current_price, color='r')
         self.ax.text(max(volumes), current_price, current_price, horizontalalignment='left', color='b')
-        plt.yticks(rotation=270) 
-        self.fig.savefig('figures/'+symbol+ ".png") 
+        plt.yticks(rotation=270, fontsize=10) 
+        self.fig.savefig('figures/{}.png'.format(symbol), transparent=True, bbox_inches='tight', pad_inches=0) 
         # self.fig.clear()
 
 

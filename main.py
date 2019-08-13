@@ -60,7 +60,7 @@ def collect(symbol):
     else:
         new_bars = remote_bars.loc[remote_bars.index>local_bars.index[-1]]
         
-    # 更新数据
+    # 更新数据,因为最新的bar记录不完整，只更新到倒数第二bar
     update_bars = new_bars.iloc[:-1]
     if not update_bars.empty:
         update_bars.to_sql(bar_table, conn, if_exists='append')
@@ -86,5 +86,5 @@ if __name__=="__main__":
             print("Waiting for trading time.")
             time.sleep(300)
         print ('Waiting next period.')
-        time.sleep(120)
+        time.sleep(30)
         
