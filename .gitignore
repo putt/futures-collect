@@ -121,7 +121,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+data/
 *.h5
 *.png
 *.db3
 *.db3-journal
+futures.db3
+
+

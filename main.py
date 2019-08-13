@@ -23,8 +23,8 @@ with open('contracts.txt') as f:
 f.closed
 
 for i in contracts :
-    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(id INTEGER PRIMARY KEY NULL, open DOUBLE NULL, high DOUBLE NULL, low DOUBLE NULL, close DOUBLE NULL, volume INTEGER NULL, position INTEGER NULL, TradingTime TEXT NULL)"
-    # print(cmd)
+    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(d TEXT PRIMARY KEY , o DOUBLE , h DOUBLE, l DOUBLE, c DOUBLE, v INTEGER, p INTEGER)"
+#    # print(cmd)
     conn.execute(cmd)
     cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution(price DOUBLE NULL, volume DOUBLE NULL)"
     conn.execute(cmd)
@@ -43,6 +43,36 @@ def volumeIncrease(pv_data, price, volume):
     else:
         pv_data[price] = volume
 
+def collect(symbol):
+    inst = dealZhengZhou(symbol)
+    # print (inst, symbol)
+    url = base_url.format(inst, now.timestamp(), inst)
+    bar_table = symbol + '_5MBar'
+    vol_table = symbol + '_VolDistribution'
+    print (inst)
+    
+    #获取本地数据
+    local_bars = pd.read_sql("SELECT * from {} ORDER BY d".format(bar_table), conn, index_col='d')
+    
+    
+    # 获取新数据
+    results = urllib.request.urlopen(url).read().decode('utf8')
+    remote_bars = pd.read_json(results[results.find('(')+1: results.find(')')]).set_index('d')
+    
+    if local_bars.empty:
+        new_bars = remote_bars
+    else:
+        new_bars = remote_bars.loc[remote_bars.index>local_bars.index[-1]]
+        
+    # 更新数据
+    update_bars = new_bars.iloc[:-1]
+    if not update_bars.empty:
+        update_bars.to_sql(bar_table, conn, if_exists='append')
+    
+    # 整合所有数据
+    return pd.concat([local_bars, new_bars], sort=True)
+   
+
 if __name__=="__main__":
     base_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
     pvplot = PriceVolumePlotter()
@@ -50,49 +80,21 @@ if __name__=="__main__":
     while 1:
         now = datetime.now()
         hour = now.hour
-       # if (hour>8 and hour < 15) or hour >20:
-        if 1:
+        if (hour>8 and hour < 15) or hour >20:
+        # if 1:
             for symbol in contracts:
-                inst = dealZhengZhou(symbol)
-                # print (inst, symbol)
-                url = base_url.format(inst, now.timestamp(), inst)
-                bar_table = symbol + '_5MBar'
-                vol_table = symbol + '_VolDistribution'
-                print (inst)
+                full_bars = collect(symbol)
                 
-                # 更新数据
-                results = urllib.request.urlopen(url).read().decode('utf8')
-                remote_data = pd.read_json(results[results.find('(')+1: results.find(')')])
-                c = conn.cursor()
-                c.execute("SELECT TradingTime from %s ORDER by TradingTime DESC LIMIT 1" %(bar_table))
-                last = c.fetchone()
+                pv1 = full_bars.loc[:,['o','v']].rename(columns={'o':'price'})
+                pv2 = full_bars.loc[:,['h','v']].rename(columns={'h':'price'})  
+                pv3 = full_bars.loc[:,['l','v']].rename(columns={'l':'price'})
+                pv4 = full_bars.loc[:,['c','v']].rename(columns={'c':'price'})
                 
-                if not last:
-                    new_data = remote_data.iloc[:-1]
-                else:
-                    new_data = remote_data.loc[remote_data['d']>last[-1]+'1'].iloc[:-1]
-                if not new_data.empty:
-                    conn.executemany("INSERT INTO %s (close, TradingTime, high, low, open, position, volume ) VALUES (?,?,?,?,?,?,?)"%bar_table , new_data.values[:-1])
-                    
-                    pv1 = new_data.loc[:,['o','v']].rename(columns={'o':'price'})
-                    pv2 = new_data.loc[:,['h','v']].rename(columns={'h':'price'})  
-                    pv3 = new_data.loc[:,['l','v']].rename(columns={'l':'price'})
-                    pv4 = new_data.loc[:,['c','v']].rename(columns={'c':'price'})
-                    
-                    pv_data = pd.concat([pv1, pv2, pv3, pv4])
-                    print(new_data)
-                    print(pv_data)
-                    conn.executemany("INSERT INTO %s (price, volume) VALUES (?,?)"%vol_table , pv_data.values)
-                    conn.commit()
-                
-                
-                # 做图
-                c.execute('SELECT price, sum(volume) from %s group by price order by price'%vol_table)
-                prices, volumes = zip(*c.fetchall())   
-                pvplot.plot(symbol, (remote_data.iloc[-1].d,remote_data.iloc[-1].c) , prices, volumes)
+                pv_data = pd.concat([pv1, pv2, pv3, pv4])
+                pvplot.plot(symbol, (full_bars.index[-1],full_bars.iloc[-1].c) , pv_data.price, pv_data.v)
         else:
             print("Waiting for trading time.")
             time.sleep(300)
         print ('Waiting next period.')
-        time.sleep(100)
+        time.sleep(120)
         
