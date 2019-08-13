@@ -24,10 +24,8 @@ f.closed
 
 for i in contracts :
     cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(d TEXT PRIMARY KEY , o DOUBLE , h DOUBLE, l DOUBLE, c DOUBLE, v INTEGER, p INTEGER)"
-#    # print(cmd)
     conn.execute(cmd)
-    cmd = "CREATE TABLE IF NOT EXISTS " + i + "_VolDistribution(price DOUBLE NULL, volume DOUBLE NULL)"
-    conn.execute(cmd)
+
 
 def dealZhengZhou(symbol):
     if symbol[0].isupper():
@@ -45,10 +43,8 @@ def volumeIncrease(pv_data, price, volume):
 
 def collect(symbol):
     inst = dealZhengZhou(symbol)
-    # print (inst, symbol)
     url = base_url.format(inst, now.timestamp(), inst)
     bar_table = symbol + '_5MBar'
-    vol_table = symbol + '_VolDistribution'
     print (inst)
     
     #获取本地数据
@@ -73,6 +69,7 @@ def collect(symbol):
     return pd.concat([local_bars, new_bars], sort=True)
    
 
+
 if __name__=="__main__":
     base_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
     pvplot = PriceVolumePlotter()
@@ -81,17 +78,10 @@ if __name__=="__main__":
         now = datetime.now()
         hour = now.hour
         if (hour>8 and hour < 15) or hour >20:
-        # if 1:
+#        if 1:
             for symbol in contracts:
                 full_bars = collect(symbol)
-                
-                pv1 = full_bars.loc[:,['o','v']].rename(columns={'o':'price'})
-                pv2 = full_bars.loc[:,['h','v']].rename(columns={'h':'price'})  
-                pv3 = full_bars.loc[:,['l','v']].rename(columns={'l':'price'})
-                pv4 = full_bars.loc[:,['c','v']].rename(columns={'c':'price'})
-                
-                pv_data = pd.concat([pv1, pv2, pv3, pv4])
-                pvplot.plot(symbol, (full_bars.index[-1],full_bars.iloc[-1].c) , pv_data.price, pv_data.v)
+                pvplot.plot(symbol, full_bars)
         else:
             print("Waiting for trading time.")
             time.sleep(300)
