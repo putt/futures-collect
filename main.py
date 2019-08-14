@@ -2,7 +2,6 @@
 # from FinalLogger import logger
 # from Constant import inst_strategy, suffix_list
 import urllib.request
-import json
 import sqlite3
 import pandas as pd
 from pvplot import PriceVolumePlotter
@@ -26,7 +25,7 @@ for i in contracts :
     cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(d TEXT PRIMARY KEY , o DOUBLE , h DOUBLE, l DOUBLE, c DOUBLE, v INTEGER, p INTEGER)"
     conn.execute(cmd)
 
-bar_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
+bar_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type={}'
 tick_url = 'https://hq.sinajs.cn/?_={}/&list=nf_{}'
 
 def dealZhengZhou(symbol):
@@ -46,15 +45,14 @@ def volumeIncrease(pv_data, price, volume):
 def collectTick(symbol):
     # 合约需要用大写字母
     url = tick_url.format(now.timestamp(), symbol.upper())
-    # print(url)
+    print(url)
     tick = urllib.request.urlopen(url).read().split(b',')
     time = tick[1].decode('utf8')
     return (':'.join((time[:2], time[2:4], time[4:])), float(tick[8]))
 
 def collectBar(symbol):
     inst = dealZhengZhou(symbol)
-    url = bar_url.format(inst, now.timestamp(), inst)
-    print(url)
+    url = bar_url.format(inst, now.timestamp(), inst, 5)
     bar_table = symbol + '_5MBar'
     
     #获取本地数据
@@ -62,11 +60,19 @@ def collectBar(symbol):
     
     
     # 获取新数据
+    print(url)
     results = urllib.request.urlopen(url).read().decode('utf8')
     remote_bars = pd.read_json(results[results.find('(')+1: results.find(')')]).set_index('d')
     
+    # 没有本地数据（新加入合约）,增加15m数据
     if local_bars.empty:
         new_bars = remote_bars
+        # 15m数据补充
+        url = bar_url.format(inst, now.timestamp(), inst, 15)
+        print(url)
+        results = urllib.request.urlopen(url).read().decode('utf8')
+        bars = pd.read_json(results[results.find('(')+1: results.find(')')]).set_index('d')
+        local_bars = bars.loc[bars.index<remote_bars.index[0]]
     else:
         new_bars = remote_bars.loc[remote_bars.index>local_bars.index[-1]]
         
@@ -86,11 +92,11 @@ if __name__=="__main__":
     # for symbol in contracts:
     while 1:
         now = datetime.now()
+        print ('{}'.format(now))
         for symbol in contracts:
             # print (symbol, now)
             pvplot.plot(symbol, collectBar(symbol), collectTick(symbol))
-        print ('{} Waiting next period.'.format(now))
-        time.sleep(30)
+        time.sleep(3)
         hour = now.hour
         while hour<9 or (hour > 14 and hour <21):
             print("Waiting for trading time.")

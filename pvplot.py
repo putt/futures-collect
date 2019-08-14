@@ -22,17 +22,17 @@ class PriceVolumePlotter():
         
         maxp = max(prices)
         minp = min(prices)
-        size = int(maxp/(maxp - minp))*2
+        size = int(maxp/(minp))*50
 
         bins = np.linspace(minp, maxp, size)
 
-        self.ax.hist(prices, bins=bins, weights=volumes, orientation='horizontal', histtype='step', linewidth=1.5)
-        self.ax.hist(ceilings.h, bins=bins, weights=ceilings.v*4, orientation='horizontal', histtype='stepfilled', color='g', edgecolor='w')
-        self.ax.hist(floors.l, bins=bins, weights=floors.v*4, orientation='horizontal', histtype='stepfilled', color='r', edgecolor='w')
+        self.ax.hist(prices, bins=bins, weights=volumes/4, hatch='/', facecolor=None, orientation='horizontal', histtype='step', linewidth=1.5)
+        self.ax.hist(ceilings.h, bins=bins, weights=ceilings.v, orientation='horizontal', histtype='stepfilled', color='g', edgecolor='w')
+        self.ax.hist(floors.l, bins=bins, weights=floors.v, orientation='horizontal', histtype='stepfilled', color='r', edgecolor='w')
         self.ax.set_title('{} {}'.format(symbol, tick[0]))
         
-        plt.axhline(y=current_price, color='r', linewidth=1.5)
-        self.ax.text(volumes[-1]*8, current_price, current_price, horizontalalignment='left', color='b')
+        plt.axhline(y=current_price, color='r', linewidth=2)
+        self.ax.text(volumes[-1]*8, current_price, current_price, horizontalalignment='left', color='k')
         plt.yticks(rotation=270, fontsize=10) 
         self.fig.savefig('figures/{}.png'.format(symbol), transparent=True, bbox_inches='tight', pad_inches=0) 
         # self.fig.clear()
