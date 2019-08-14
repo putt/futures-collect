@@ -73,6 +73,7 @@ def collectBar(symbol):
         results = urllib.request.urlopen(url).read().decode('utf8')
         bars = pd.read_json(results[results.find('(')+1: results.find(')')]).set_index('d')
         local_bars = bars.loc[bars.index<remote_bars.index[0]]
+        local_bars.to_sql(bar_table, conn, if_exists='append')
     else:
         new_bars = remote_bars.loc[remote_bars.index>local_bars.index[-1]]
         
@@ -98,7 +99,7 @@ if __name__=="__main__":
             pvplot.plot(symbol, collectBar(symbol), collectTick(symbol))
         time.sleep(3)
         hour = now.hour
-        while hour<9 or (hour > 14 and hour <21):
+        while (hour>2 and hour<9) or (hour > 14 and hour <21):
             print("Waiting for trading time.")
             time.sleep(30)
             hour = datetime.now().hour
