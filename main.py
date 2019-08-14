@@ -26,6 +26,8 @@ for i in contracts :
     cmd = "CREATE TABLE IF NOT EXISTS " + i + "_5MBar(d TEXT PRIMARY KEY , o DOUBLE , h DOUBLE, l DOUBLE, c DOUBLE, v INTEGER, p INTEGER)"
     conn.execute(cmd)
 
+bar_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
+tick_url = 'https://hq.sinajs.cn/?_={}/&list=nf_{}'
 
 def dealZhengZhou(symbol):
     if symbol[0].isupper():
@@ -41,11 +43,19 @@ def volumeIncrease(pv_data, price, volume):
     else:
         pv_data[price] = volume
 
-def collect(symbol):
+def collectTick(symbol):
+    # 合约需要用大写字母
+    url = tick_url.format(now.timestamp(), symbol.upper())
+    # print(url)
+    tick = urllib.request.urlopen(url).read().split(b',')
+    time = tick[1].decode('utf8')
+    return (':'.join((time[:2], time[2:4], time[4:])), float(tick[8]))
+
+def collectBar(symbol):
     inst = dealZhengZhou(symbol)
-    url = base_url.format(inst, now.timestamp(), inst)
+    url = bar_url.format(inst, now.timestamp(), inst)
+    print(url)
     bar_table = symbol + '_5MBar'
-    print (inst)
     
     #获取本地数据
     local_bars = pd.read_sql("SELECT * from {} ORDER BY d".format(bar_table), conn, index_col='d')
@@ -71,20 +81,20 @@ def collect(symbol):
 
 
 if __name__=="__main__":
-    base_url = 'https://stock2.finance.sina.com.cn/futures/api/jsonp.php/var%20_{}_{}=/InnerFuturesNewService.getFewMinLine?symbol={}&type=5'
+    
     pvplot = PriceVolumePlotter()
     # for symbol in contracts:
     while 1:
         now = datetime.now()
-        hour = now.hour
-        if (hour>8 and hour < 15) or hour >20:
-#        if 1:
-            for symbol in contracts:
-                full_bars = collect(symbol)
-                pvplot.plot(symbol, full_bars)
-        else:
-            print("Waiting for trading time.")
-            time.sleep(300)
-        print ('Waiting next period.')
+        for symbol in contracts:
+            # print (symbol, now)
+            pvplot.plot(symbol, collectBar(symbol), collectTick(symbol))
+        print ('{} Waiting next period.'.format(now))
         time.sleep(30)
+        hour = now.hour
+        while hour<9 or (hour > 14 and hour <21):
+            print("Waiting for trading time.")
+            time.sleep(30)
+            hour = datetime.now().hour
+
         
